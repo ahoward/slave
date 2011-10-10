@@ -8,7 +8,7 @@ require 'sync'
 
 # TODO - lifeline need close-on-exec set in it!
 
-#
+ 
 # the Slave class encapsulates the work of setting up a drb server in another
 # process running on localhost via unix domain sockets.  the slave process is
 # attached to it's parent via a LifeLine which is designed such that the slave
@@ -39,49 +39,48 @@ require 'sync'
 # of the two 'b' is preferred.
 #
   class Slave
-#--{{{
-    VERSION = '1.2.2'
+    VERSION = '1.3.0'
     def self.version() VERSION end
-  #
+   
   # env config
   #
     DEFAULT_SOCKET_CREATION_ATTEMPTS = Integer(ENV['SLAVE_SOCKET_CREATION_ATTEMPTS'] || 42)
     DEFAULT_DEBUG = (ENV['SLAVE_DEBUG'] ? true : false)
     DEFAULT_THREADSAFE = (ENV['SLAVE_THREADSAFE'] ? true : false)
-  #
+   
   # class initialization
   #
     @socket_creation_attempts = DEFAULT_SOCKET_CREATION_ATTEMPTS
     @debug = DEFAULT_DEBUG
     @threadsafe = DEFAULT_THREADSAFE
-  #
+   
   # class methods
   #
     class << self
-#--{{{
-      # defineds how many attempts will be made to create a temporary unix domain
-      # socket
+    # defineds how many attempts will be made to create a temporary unix domain
+    # socket
+    #
       attr :socket_creation_attempts, true
 
-      # if this is true and you are running from a terminal information is printed
-      # on STDERR
+    # if this is true and you are running from a terminal information is printed
+    # on STDERR
+    #
       attr :debug, true
 
-      # if this is true all slave objects will be wrapped such that any call
-      # to the object is threadsafe.  if you do not use this you must ensure
-      # that your objects are threadsafe __yourself__ as this is required of
-      # any object acting as a drb server
+    # if this is true all slave objects will be wrapped such that any call
+    # to the object is threadsafe.  if you do not use this you must ensure
+    # that your objects are threadsafe __yourself__ as this is required of
+    # any object acting as a drb server
+    #
       attr :threadsafe, true
 
-      # get a default value 
-      def default key
-#--{{{
+    # get a default value 
+    #
+      def default(key)
         send key
-#--}}}
       end
 
-      def getopts opts
-#--{{{
+      def getopts(opts)
         raise ArgumentError, opts.class unless
           opts.respond_to?('has_key?') and opts.respond_to?('[]')
 
@@ -91,12 +90,11 @@ require 'sync'
           key = keys.detect{|k| opts.has_key? k } and break opts[key]
           defval
         end
-#--}}}
       end
 
-      # just fork with out silly warnings
-      def fork &b
-#--{{{
+    # just fork with out silly warnings
+    #
+      def fork(&b)
         v = $VERBOSE
         begin
           $VERBOSE = nil
@@ -104,16 +102,14 @@ require 'sync'
         ensure
         $VERBOSE = v
         end
-#--}}}
       end
-#--}}}
     end
 
-  #
+   
   # helper classes
   #
 
-  #
+   
   # ThreadSafe is a delegate wrapper class used for implementing gross thread
   # safety around existing objects.  when an object is wrapped with this class
   # as
@@ -125,37 +121,42 @@ require 'sync'
   # 'threadsafe'/:threadsafe keyword to Slave#initialize
   #
     class ThreadSafe
-#--{{{
-      instance_methods.each{|m| undef_method m.to_sym unless m[%r/__/]}
-      def initialize object
+      instance_methods.each{|m| undef_method m.to_sym unless m =~ %r/\A__|\Aobject_id\Z/}
+
+      def initialize(object)
         @object = object
         @sync = Sync.new
       end
+
       def ex
         @sync.synchronize{ yield }
       end
+
       def method_missing m, *a, &b
         ex{ @object.send m, *a, &b }
       end
+
       def respond_to? *a, &b 
         ex{ @object.respond_to? *a, &b }
       end
+
       def inspect
         ex{ @object.inspect }
       end
+
       def class
         ex{ @object.class }
       end
-#--}}}
     end
-  #
+
+   
   # a simple thread safe hash used to map object_id to a set of file
   # descriptors in the LifeLine class.  see LifeLine::FDS
   #
     class ThreadSafeHash < Hash
       def self.new(*a, &b) ThreadSafe.new(super) end
     end
-  #
+   
   # the LifeLine class is used to communitacte between child and parent
   # processes and to prevent child processes from ever becoming zombies or
   # otherwise abandoned by their parents.  the basic concept is that a socket
@@ -165,11 +166,10 @@ require 'sync'
   # previous Slave versions.
   #
     class LifeLine
-#--{{{
       FDS = ThreadSafeHash.new
 
       def initialize
-        @pair = Socket.pair Socket::AF_UNIX, Socket::SOCK_STREAM, 0
+        @pair = Socket.pair(Socket::AF_UNIX, Socket::SOCK_STREAM, 0)
         @owner = Process.pid
         @pid = nil
         @socket = nil
@@ -185,7 +185,7 @@ require 'sync'
         Process.pid == @owner
       end
 
-      def throw *ignored
+      def throw(*ignored)
         raise unless owner?
         @pair[-1].close
         @pair[-1] = nil
@@ -194,7 +194,7 @@ require 'sync'
         @socket.sync = true
       end
 
-      def catch *ignored
+      def catch(*ignored)
         raise if owner?
         @pair[0].close
         @pair[0] = nil
@@ -264,10 +264,9 @@ require 'sync'
       def cling &b
         on_cut{ begin; b.call if b; ensure; Kernel.exit; end }.join
       end
-#--}}}
     end
 
-  #
+   
   # attrs
   #
     attr :obj
@@ -283,7 +282,7 @@ require 'sync'
     attr :ppid
     attr :uri
     attr :socket
-  #
+   
   # sets up a child process serving any object as a DRb server running locally
   # on unix domain sockets.  the child process has a LifeLine established
   # between it and the parent, making it impossible for the child to outlive
@@ -316,7 +315,6 @@ require 'sync'
   #   threadsafe : wrap the slave object with ThreadSafe to implement gross thread safety 
   #
     def initialize opts = {}, &block
-#--{{{
       getopt = getopts opts
 
       @obj = getopt['object']
@@ -345,7 +343,7 @@ require 'sync'
         @object = o
       end
 
-    #
+     
     # child
     #
       unless((@pid = Slave::fork))
@@ -382,16 +380,23 @@ require 'sync'
             @object = ThreadSafe.new @object
           end
 
-          @ppid, @pid = Process::ppid, Process::pid
+          @ppid, @pid = Process.ppid, Process.pid
           @socket = nil
           @uri = nil
 
-          tmpdir, basename = Dir::tmpdir, File::basename(@psname)
+          tmpdir = test(?d, '/tmp') ? '/tmp' : Dir.tmpdir
+          basename = File.basename(@psname)
 
           @socket_creation_attempts.times do |attempt|
             se = nil
             begin
-              s = File::join(tmpdir, "#{ basename }_#{ attempt }_#{ rand }")
+              s =
+                if attempt > 0
+                  File.join(tmpdir, "#{ basename }_#{ attempt }")
+                else
+                  File.join(tmpdir, "#{ basename }")
+                end
+              raise("#{ s } is too long!") if s.size > 103
               u = "drbunix://#{ s }"
               DRb::start_service u, @object 
               @socket = s
@@ -411,7 +416,7 @@ require 'sync'
               exit
             end
 
-            @lifeline.puts @socket 
+            @lifeline.puts(@socket)
             @lifeline.cling
           else
             @lifeline.release
@@ -424,7 +429,7 @@ require 'sync'
           status = e.respond_to?('status') ? e.status : 1
           exit(status)
         end
-    #
+     
     # parent 
     #
       else
@@ -446,10 +451,10 @@ require 'sync'
           Kernel.at_exit{ FileUtils::rm_f @socket }
           @uri = "drbunix://#{ socket }"
           trace{ "parent - uri <#{ @uri }>" }
-        #
+         
         # starting drb on localhost avoids dns lookups!
         #
-          DRb::start_service('druby://localhost:0', nil) unless DRb::thread
+          DRb::start_service('druby://0.0.0.0:0', nil) unless DRb::thread
           @object = DRbObject::new nil, @uri
           if @object.respond_to? '__slave_object_failure__'
             c, m, bt = Marshal.load @object.__slave_object_failure__
@@ -462,15 +467,13 @@ require 'sync'
           raise "failed to find slave socket <#{ @socket }>"
         end
       end
-#--}}}
     end
-  #
+   
   # starts a thread to collect the child status and sets up at_exit handler to
   # prevent zombies.  the at_exit handler is canceled if the thread is able to
   # collect the status
   #
     def detach
-#--{{{
       reap = lambda do |cid|
         begin
           @status = Process::waitpid2(cid).last
@@ -493,81 +496,66 @@ require 'sync'
             reap = lambda{|cid| 'no-op' }
           end
         end
-#--}}}
     end
-  #
+   
   # wait for slave to finish.  if the keyword 'non_block'=>true is given a
   # thread is returned to do the waiting in an async fashion. eg 
   #
   #   thread = slave.wait(:non_block=>true){|value| "background <#{ value }>"}
   #
     def wait opts = {}, &b
-#--{{{
       b ||= lambda{|exit_status|}
       non_block = getopts(opts)['non_block']
       non_block ? Thread.new{ b[ @waiter.value ] } : b[ @waiter.value ]
-#--}}}
     end
     alias :wait2 :wait
-  #
+   
   # cuts the lifeline and kills the child process - give the key 'quiet' to
   # ignore errors shutting down, including having already shutdown
   #
     def shutdown opts = {}
-#--{{{
       quiet = getopts(opts)['quiet']
       raise "already shutdown" if @shutdown unless quiet
       begin; Process::kill 'SIGUSR2', @pid; rescue Exception => e; end
       begin; @lifeline.cut; rescue Exception; end
       raise e if e unless quiet
       @shutdown = true
-#--}}}
     end
-  #
+   
   # true
   #
     def shutdown?
-#--{{{
       @shutdown
-#--}}}
     end
-  #
+   
   # generate a default name to appear in ps/top
   #
     def gen_psname obj
-#--{{{
-      "slave_#{ obj.class }_#{ obj.object_id }_#{ Process::ppid }_#{ Process::pid }".downcase.gsub(%r/\s+/,'_')
-#--}}}
+      "slave_#{ obj.class }_#{ obj.object_id }_#{ Process.ppid }_#{ Process.pid }".downcase.gsub(%r/\s+/,'_')
     end
-  #
+   
   # see docs for Slave.default
   #
     def default key
-#--{{{
       self.class.default key
-#--}}}
     end
-  #
+   
   # see docs for Slave.getopts
   #
     def getopts opts 
-#--{{{
       self.class.getopts opts 
-#--}}}
     end
-  #
+   
   # debugging output - ENV['SLAVE_DEBUG']=1 to enable
   #
     def trace
-#--{{{
       if @debug 
         STDERR.puts yield
         STDERR.flush
       end
-#--}}}
     end
 
-  #
+   
   # a simple convenience method which returns an *object* from another
   # process.  the object returned is the result of the supplied block. eg
   #
@@ -584,7 +572,6 @@ require 'sync'
   #   object = thread.value 
   #
     def self.object opts = {}, &b
-#--{{{
       async = opts.delete('async') || opts.delete(:async) 
 
       opts['object'] = opts[:object] = lambda(&b)
@@ -601,7 +588,5 @@ require 'sync'
       end
 
       async ? Thread.new{ value[slave] } : value[slave] 
-#--}}}
     end
-#--}}}
   end # class Slave 

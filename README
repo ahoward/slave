@@ -38,6 +38,9 @@ URIS
   http://codeforpeople.com/lib/ruby/slave
 
 HISTORY
+  1.3.0:
+    - fixes for 1.9.2 (undef object_id)
+    - fixes for osx (too long socket names) 
 
   1.2.1:
     - jruby/ThreadSafe patches from skaar and ez.  using slave.rb with jruby,
@@ -105,18 +108,19 @@ HISTORY
 
 SAMPLES
 
+
   <========< samples/a.rb >========>
 
   ~ > cat samples/a.rb
 
     require 'slave'
-    #
+     
     # simple usage is simply to stand up a server object as a slave.  you do not
     # need to wait for the server, join it, etc.  it will die when the parent
     # process dies - even under 'kill -9' conditions
     #
       class Server
-        def add_two n
+        def add_two(n)
           n + 2
         end
       end
@@ -163,9 +167,9 @@ SAMPLES
   ~ > ruby samples/b.rb
 
     :postgresql
-    samples/b.rb:22: undefined method `typo' for #<Server:0xb756ed18> (NoMethodError)
-    	from ./lib/slave.rb:369:in `[]'
-    	from ./lib/slave.rb:369:in `initialize'
+    samples/b.rb:22: undefined method `typo' for #<Server:0x10030aa60> (NoMethodError)
+    	from ./lib/slave.rb:367:in `[]'
+    	from ./lib/slave.rb:367:in `initialize'
     	from samples/b.rb:22:in `new'
     	from samples/b.rb:22
 
@@ -198,11 +202,11 @@ SAMPLES
 
   ~ > ruby samples/c.rb
 
-    7971
-    7972
+    48871
+    48872
     samples/c.rb:21: undefined local variable or method `fubar' for main:Object (NameError)
-    	from ./lib/slave.rb:361:in `call'
-    	from ./lib/slave.rb:361:in `initialize'
+    	from ./lib/slave.rb:359:in `call'
+    	from ./lib/slave.rb:359:in `initialize'
     	from samples/c.rb:21:in `new'
     	from samples/c.rb:21
 
@@ -297,6 +301,7 @@ SAMPLES
 
   ~ > ruby samples/g.rb
 
-    {"that"=>7990, "this"=>7989}
-    {"that"=>[7991, Fri, Apr 27 2007 16:38:30 -0600], "this"=>[7989, Fri, Apr 27 2007 16:38:28 -0600]}
+    {"that"=>48890, "this"=>48889}
+    {"that"=>[48891, Mon Oct 10 08:21:47 -0600 2011], "this"=>[48889, Mon Oct 10 08:21:45 -0600 2011]}
+
 
