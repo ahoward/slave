@@ -157,7 +157,7 @@ require 'sync'
       def self.new(*a, &b) ThreadSafe.new(super) end
     end
    
-  # the LifeLine class is used to communitacte between child and parent
+  # the LifeLine class is used to communicate between child and parent
   # processes and to prevent child processes from ever becoming zombies or
   # otherwise abandoned by their parents.  the basic concept is that a socket
   # pair is setup between child and parent.  the child process, because it is
