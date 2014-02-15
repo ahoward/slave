@@ -39,8 +39,12 @@ require 'sync'
 # of the two 'b' is preferred.
 #
   class Slave
-    VERSION = '1.3.0'
+    VERSION = '1.3.1'
     def self.version() VERSION end
+
+    def Slave.description
+      'easily start a drb server in another process'
+    end
    
   # env config
   #
