@@ -39,7 +39,7 @@ require 'sync'
 # of the two 'b' is preferred.
 #
   class Slave
-    VERSION = '1.3.1'
+    VERSION = '1.3.2'
     def self.version() VERSION end
 
     def Slave.description

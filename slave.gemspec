@@ -3,7 +3,7 @@
 
 Gem::Specification::new do |spec|
   spec.name = "slave"
-  spec.version = "1.3.1"
+  spec.version = "1.3.2"
   spec.platform = Gem::Platform::RUBY
   spec.summary = "slave"
   spec.description = "easily start a drb server in another process"
@@ -23,7 +23,8 @@ Gem::Specification::new do |spec|
  "samples/d.rb",
  "samples/e.rb",
  "samples/f.rb",
- "samples/g.rb"]
+ "samples/g.rb",
+ "slave.gemspec"]
 
   spec.executables = []
   
@@ -31,8 +32,7 @@ Gem::Specification::new do |spec|
 
   spec.test_files = nil
 
-### spec.add_dependency 'lib', '>= version'
-#### spec.add_dependency 'map'
+  
 
   spec.extensions.push(*[])
 
